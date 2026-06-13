@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+    
+    <button id="theme-toggle" class="theme-btn">☀️ Light Mode</button>
+
+    <div class="admin-container">
+        <h2 style="margin-bottom: 1rem;">🔒 Admin Dashboard</h2>
+        
+        <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <input type="email" id="admin-email" placeholder="Admin Email" required style="border: 2px solid #00aaff;">
+            <input type="password" id="admin-password" placeholder="Admin Password" required style="border: 2px solid #00aaff;">
+        </div>
+
+        <hr style="border-color: rgba(255,255,255,0.2); margin-bottom: 1.5rem;">
+
+        <h3>➕ Add New Project</h3>
+        <form id="add-project-form">
+            <input type="text" id="project-title" placeholder="Project Title" required>
+            <textarea id="project-desc" rows="3" placeholder="Project Description" required></textarea>
+            <input type="file" id="project-image" accept="image/*" required>
+            <button type="submit">Upload Project</button>
+        </form>
+        <p id="admin-status" style="margin-top: 1rem; font-weight: bold;"></p>
+
+        <hr style="border-color: rgba(255,255,255,0.2); margin: 2rem 0 1.5rem;">
+
+        <h3>🗑️ Manage Projects</h3>
+        <div id="manage-projects-list" style="margin-top: 1rem; text-align: left;">
+            <p>Loading projects...</p>
+        </div>
+        
+        <br>
+        <a href="index.html" style="text-decoration: none; color: #00aaff; font-weight: bold; display: inline-block; margin-top: 1rem;">← Back to Portfolio</a>
+    </div>
+
+    <script>
+        // Theme Logic
+        const themeBtn = document.getElementById('theme-toggle');
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+            themeBtn.innerText = "🌙 Dark Mode";
+        }
+
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            themeBtn.innerText = isLight ? "🌙 Dark Mode" : "☀️ Light Mode";
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        });
+
+        // Load Admin Projects
+        async function loadAdminProjects() {
+            const listContainer = document.getElementById('manage-projects-list');
+            try {
+                const response = await fetch('http://localhost:3000/api/projects');
+                const projects = await response.json();
+                
+                listContainer.innerHTML = '';
+                if (projects.length === 0) {
+                    listContainer.innerHTML = '<p style="text-align:center;">No projects found.</p>';
+                    return;
+                }
+
+                projects.forEach(project => {
+                    const projectRow = document.createElement('div');
+                    projectRow.className = 'admin-project-row';
+                    projectRow.innerHTML = `
+                        <span style="font-weight: bold;">${project.title}</span>
+                        <button onclick="deleteProject('${project.id}')" class="delete-btn">Delete</button>
+                    `;
+                    listContainer.appendChild(projectRow);
+                });
+            } catch (err) {
+                listContainer.innerHTML = '<p>Failed to load projects.</p>';
+            }
+        }
+
+        // Add Project
+        document.getElementById('add-project-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // .trim() on frontend prevents user spacebar accidents
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            const statusText = document.getElementById('admin-status');
+
+            if (!email || !password) return alert("Please enter your Master Email and Password at the top.");
+
+            statusText.innerText = "Uploading...";
+            statusText.style.color = "inherit";
+
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('title', document.getElementById('project-title').value);
+            formData.append('description', document.getElementById('project-desc').value);
+            formData.append('image', document.getElementById('project-image').files[0]);
+
+            try {
+                const response = await fetch('http://localhost:3000/api/projects', {
+                    method: 'POST', body: formData 
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusText.innerText = "✅ Added Successfully!";
+                    statusText.style.color = "#00ff88";
+                    document.getElementById('add-project-form').reset();
+                    loadAdminProjects(); 
+                } else {
+                    statusText.innerText = "❌ " + data.error;
+                    statusText.style.color = "#ff4444";
+                }
+            } catch (err) {
+                statusText.innerText = "❌ Server error.";
+                statusText.style.color = "#ff4444";
+            }
+        });
+
+        // Delete Project
+        async function deleteProject(id) {
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            
+            if (!email || !password) return alert("Please enter your Master Email and Password at the top to delete.");
+            if (!confirm("Are you sure you want to delete this project?")) return;
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/projects/${id}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'admin-email': email,
+                        'admin-password': password 
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    loadAdminProjects(); 
+                } else {
+                    alert("❌ Error: " + data.error);
+                }
+            } catch (err) {
+                alert("❌ Server error.");
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadAdminProjects);
+    </script>
+</body>
+</html>
