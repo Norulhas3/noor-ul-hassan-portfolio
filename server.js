@@ -6,7 +6,8 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 
 const app = express();
-const PORT = 3000;
+// This line is CRITICAL for Render
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
