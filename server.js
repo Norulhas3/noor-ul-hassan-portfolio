@@ -46,6 +46,11 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim();
 // --- API Routes ---
 
 // 1. Get Projects
+// Add this near your other routes
+app.get('/', (req, res) => {
+    res.send('Backend server is running successfully!');
+});
+
 app.get('/api/projects', (req, res) => {
     res.json(projects);
 });
