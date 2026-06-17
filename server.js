@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer'); 
 const nodemailer = require('nodemailer');
-
+import { Analytics } from "@vercel/analytics/next"
 const app = express();
 // This line is CRITICAL for Render
 const PORT = process.env.PORT || 3000;
